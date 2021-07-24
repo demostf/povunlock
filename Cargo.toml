@@ -11,9 +11,9 @@ crate-type = ["cdylib", "rlib"]
 default = ["console_error_panic_hook"]
 
 [dependencies]
-bitbuffer = "0.9"
-tf-demo-parser = { version = "0.2.6", path = "../tf-demo-parser" }
-wasm-bindgen = "0.2.63"
+bitbuffer = "0.10"
+tf-demo-parser = "0.3"
+wasm-bindgen = "0.2"
 web-sys = { version = "0.3", features = ["console"] }
 
 # The `console_error_panic_hook` crate provides better debugging of panics by

@@ -1,19 +1,12 @@
 use wasm_bindgen::prelude::*;
 use tf_demo_parser::{Demo};
 use tf_demo_parser::demo::header::Header;
-use tf_demo_parser::demo::parser::{RawPacketStream, DemoHandler, NullHandler, Encode};
+use tf_demo_parser::demo::parser::{RawPacketStream, DemoHandler, Encode};
 use tf_demo_parser::demo::packet::{Packet, PacketType};
 use tf_demo_parser::demo::message::Message;
 use bitbuffer::{BitWriteStream, LittleEndian, BitRead, BitWrite};
 
 extern crate web_sys;
-
-// A macro to provide `println!(..)`-style syntax for `console.log` logging.
-macro_rules! log {
-    ( $( $t:tt )* ) => {
-        web_sys::console::log_1(&format!( $( $t )* ).into());
-    }
-}
 
 // When the `wee_alloc` feature is enabled, use `wee_alloc` as the global
 // allocator.
@@ -35,7 +28,6 @@ fn set_panic_hook() {
 #[wasm_bindgen]
 pub fn unlock(input: &[u8]) -> Vec<u8> {
     set_panic_hook();
-    log!("got {} bytes", input.len());
     let mut out_buffer = Vec::with_capacity(input.len());
     {
         let mut out_stream = BitWriteStream::new(&mut out_buffer, LittleEndian);
@@ -46,32 +38,24 @@ pub fn unlock(input: &[u8]) -> Vec<u8> {
         header.write(&mut out_stream).unwrap();
 
         let mut packets = RawPacketStream::new(stream.clone());
-        let mut handler = DemoHandler::parse_all_with_analyser(NullHandler);
+        let mut handler = DemoHandler::default();
         handler.handle_header(&header);
 
         while let Some(mut packet) = packets.next(&handler.state_handler).unwrap() {
             match &mut packet {
                 Packet::Sigon(message_packet) | Packet::Message(message_packet) => {
                     message_packet.meta.view_angles = Default::default();
-                    let messages = std::mem::take(&mut message_packet.messages);
-                    let messages = messages
-                        .into_iter()
-                        .map(|mut msg| {
-                            match &mut msg {
-                                Message::ServerInfo(info) => {
-                                    info.stv = true;
-                                }
-                                _ => {}
-                            };
-                            msg
-                        })
-                        .collect::<Vec<_>>();
-                    message_packet.messages = messages;
+                    message_packet
+                        .messages
+                        .iter_mut()
+                        .for_each(|msg| if let Message::ServerInfo(info) = msg {
+                            info.stv = true;
+                        });
                 }
                 _ => {}
             }
 
-            if packet.packet_type() != PacketType::ConsoleCmd {
+            if packet.packet_type() != PacketType::ConsoleCmd && packet.packet_type() != PacketType::UserCmd {
                 packet
                     .encode(&mut out_stream, &handler.state_handler)
                     .unwrap();
