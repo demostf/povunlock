@@ -1,5 +1,5 @@
 use wasm_bindgen::prelude::*;
-use tf_demo_parser::{Demo, MessageType};
+use tf_demo_parser::{Demo};
 use tf_demo_parser::demo::header::Header;
 use tf_demo_parser::demo::parser::{RawPacketStream, DemoHandler, NullHandler, Encode};
 use tf_demo_parser::demo::packet::{Packet, PacketType};
@@ -56,7 +56,6 @@ pub fn unlock(input: &[u8]) -> Vec<u8> {
                     let messages = std::mem::take(&mut message_packet.messages);
                     let messages = messages
                         .into_iter()
-                        .filter(|msg| msg.get_message_type() != MessageType::SetView)
                         .map(|mut msg| {
                             match &mut msg {
                                 Message::ServerInfo(info) => {
