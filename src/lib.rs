@@ -43,7 +43,7 @@ pub fn unlock(input: &[u8]) -> Vec<u8> {
 
         while let Some(mut packet) = packets.next(&handler.state_handler).unwrap() {
             match &mut packet {
-                Packet::Sigon(message_packet) | Packet::Message(message_packet) => {
+                Packet::Signon(message_packet) | Packet::Message(message_packet) => {
                     message_packet.meta.view_angles = Default::default();
                     message_packet
                         .messages
