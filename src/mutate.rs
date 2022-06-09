@@ -21,11 +21,14 @@ struct PacketMessageMutator<T: MessageMutator> {
 
 impl<T: MessageMutator> PacketMutator for PacketMessageMutator<T> {
     fn mutate_packet(&self, packet: &mut Packet) {
-        if let Packet::Message(msg_packet) = packet {
-            msg_packet
-                .messages
-                .iter_mut()
-                .for_each(|msg| self.mutator.mutate_message(msg));
+        match packet {
+            Packet::Message(msg_packet) | Packet::Signon(msg_packet) => {
+                msg_packet
+                    .messages
+                    .iter_mut()
+                    .for_each(|msg| self.mutator.mutate_message(msg));
+            },
+            _ => {}
         }
     }
 }
@@ -54,12 +57,15 @@ struct PacketMessageFilter<T: MessageFilter> {
 
 impl<T: MessageFilter> PacketMutator for PacketMessageFilter<T> {
     fn mutate_packet(&self, packet: &mut Packet) {
-        if let Packet::Message(msg_packet) = packet {
-            let messages = take(&mut msg_packet.messages);
-            msg_packet.messages = messages
-                .into_iter()
-                .filter(|msg| self.filter.filter(msg))
-                .collect();
+        match packet {
+            Packet::Message(msg_packet) | Packet::Signon(msg_packet) => {
+                let messages = take(&mut msg_packet.messages);
+                msg_packet.messages = messages
+                    .into_iter()
+                    .filter(|msg| self.filter.filter(msg))
+                    .collect();
+            }
+            _ => {}
         }
     }
 }
