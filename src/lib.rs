@@ -1,3 +1,5 @@
+mod mutate;
+
 use wasm_bindgen::prelude::*;
 use tf_demo_parser::{Demo};
 use tf_demo_parser::demo::header::Header;
@@ -6,7 +8,9 @@ use tf_demo_parser::demo::packet::{Packet, PacketType};
 use tf_demo_parser::demo::message::Message;
 use bitbuffer::{BitWriteStream, LittleEndian, BitRead, BitWrite};
 use tf_demo_parser::demo::message::packetentities::PacketEntitiesMessage;
+use tf_demo_parser::demo::message::usermessage::UserMessageType;
 use tf_demo_parser::demo::sendprop::{SendProp, SendPropIdentifier, SendPropValue};
+use crate::mutate::{MutatorList, PacketMutator};
 
 extern crate web_sys;
 
@@ -48,6 +52,15 @@ pub fn unlock(input: &[u8]) -> Vec<u8> {
         handler.handle_header(&header);
 
         let mut local_player_entity_id = None;
+
+        let mut mutators = MutatorList::new();
+        mutators.push_message_filter(|message: &Message| {
+            if let Message::UserMessage(usr_message) = message {
+                UserMessageType::CloseCaption != usr_message.message_type()
+            } else {
+                true
+            }
+        });
 
         while let Some(mut packet) = packets.next(&handler.state_handler).unwrap() {
             match &mut packet {
@@ -92,6 +105,8 @@ pub fn unlock(input: &[u8]) -> Vec<u8> {
                 }
                 _ => {}
             }
+
+            mutators.mutate_packet(&mut packet);
 
             if packet.packet_type() != PacketType::ConsoleCmd && packet.packet_type() != PacketType::UserCmd {
                 packet
