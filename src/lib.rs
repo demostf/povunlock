@@ -44,7 +44,6 @@ pub fn unlock(input: &[u8]) -> Vec<u8> {
 
         let demo = Demo::new(&input);
         let spectator_id = find_stv(&demo).expect("no stv bot found");
-        dbg!(spectator_id);
 
         let mut stream = demo.get_stream();
         let header = Header::read(&mut stream).unwrap();
@@ -85,7 +84,6 @@ pub fn unlock(input: &[u8]) -> Vec<u8> {
 
 
         while let Some(mut packet) = packets.next(&handler.state_handler).unwrap() {
-            let tick = packet.tick();
             mutators.mutate_packet(&mut packet);
 
             if packet.packet_type() != PacketType::ConsoleCmd && packet.packet_type() != PacketType::UserCmd {
@@ -94,11 +92,6 @@ pub fn unlock(input: &[u8]) -> Vec<u8> {
                     .unwrap();
             }
             handler.handle_packet(packet).unwrap();
-
-            // if tick > 10_000 {
-            //     break;
-            //     todo!()
-            // }
         }
     }
     out_buffer
@@ -127,7 +120,6 @@ impl MessageMutator for AddStvEntity {
                     panic!("already an stv entity?");
                 }
                 let server_class = player_entity.server_class;
-                dbg!(server_class);
 
                 ent_message.entities.push(PacketEntity {
                     server_class,
