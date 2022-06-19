@@ -103,38 +103,40 @@ impl AddStvEntity {
     pub fn new(entity_index: EntityId) -> AddStvEntity {
         AddStvEntity {
             added: Cell::new(false),
-            entity_index
+            entity_index,
         }
     }
 }
 
-const TEAM_PROP: SendPropIdentifier=SendPropIdentifier::new("DT_BaseEntity","m_iTeamNum");
+const TEAM_PROP: SendPropIdentifier = SendPropIdentifier::new("DT_BaseEntity", "m_iTeamNum");
 
 impl MessageMutator for AddStvEntity {
     fn mutate_message(&self, message: &mut Message) {
         if !self.added.get() {
             if let Message::PacketEntities(ent_message) = message {
-                let player_entity = ent_message.entities.iter().find(|ent| ent.entity_index >= 1 && ent.entity_index < 255).expect("Failed to find a player entity");
-                if player_entity.entity_index == self.entity_index {
-                    panic!("already an stv entity?");
+                if ent_message.base_line == 0 {
+                    let player_entity = ent_message.entities.iter().find(|ent| ent.entity_index >= 1 && ent.entity_index < 255).expect("Failed to find a player entity");
+                    if player_entity.entity_index == self.entity_index {
+                        panic!("already an stv entity?");
+                    }
+                    let server_class = player_entity.server_class;
+
+                    let mut team_prop = player_entity.get_prop_by_identifier(&TEAM_PROP).unwrap().clone();
+                    team_prop.value = SendPropValue::Integer(1);
+
+                    ent_message.entities.push(PacketEntity {
+                        server_class,
+                        entity_index: self.entity_index,
+                        baseline_props: vec![],
+                        props: vec![team_prop],
+                        in_pvs: false,
+                        update_type: UpdateType::Enter,
+                        serial_number: 1234567,
+                        delay: None,
+                    });
+                    ent_message.entities.sort_by(|a, b| a.entity_index.cmp(&b.entity_index));
+                    self.added.set(true);
                 }
-                let server_class = player_entity.server_class;
-
-                let mut team_prop = player_entity.get_prop_by_identifier(&TEAM_PROP).unwrap().clone();
-                team_prop.value = SendPropValue::Integer(1);
-
-                ent_message.entities.push(PacketEntity {
-                    server_class,
-                    entity_index: self.entity_index,
-                    baseline_props: vec![],
-                    props: vec![team_prop],
-                    in_pvs: false,
-                    update_type: UpdateType::Enter,
-                    serial_number: 1234567,
-                    delay: None
-                });
-                ent_message.entities.sort_by(|a, b| a.entity_index.cmp(&b.entity_index));
-                self.added.set(true);
             }
         }
     }
