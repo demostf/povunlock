@@ -8,11 +8,9 @@ use tf_demo_parser::demo::parser::{RawPacketStream, DemoHandler, Encode};
 use tf_demo_parser::demo::packet::{Packet, PacketType};
 use tf_demo_parser::demo::message::Message;
 use bitbuffer::{BitWriteStream, LittleEndian, BitRead, BitWrite};
-use tf_demo_parser::demo::message::packetentities::{EntityId, PacketEntitiesMessage, PacketEntity, UpdateType};
+use tf_demo_parser::demo::message::packetentities::{EntityId, PacketEntity, UpdateType};
 use tf_demo_parser::demo::message::usermessage::UserMessageType;
-use tf_demo_parser::demo::packet::datatable::ClassId;
-use tf_demo_parser::demo::parser::analyser::Team;
-use tf_demo_parser::demo::sendprop::{SendProp, SendPropIdentifier, SendPropValue};
+use tf_demo_parser::demo::sendprop::{SendPropIdentifier, SendPropValue};
 use crate::mutate::{MessageMutator, MutatorList, PacketMutator};
 
 extern crate web_sys;
@@ -80,7 +78,6 @@ pub fn unlock(input: &[u8]) -> Vec<u8> {
             }
         });
         mutators.push_message_mutator(AddStvEntity::new(spectator_id));
-        // 1794
 
 
         while let Some(mut packet) = packets.next(&handler.state_handler).unwrap() {
@@ -111,6 +108,8 @@ impl AddStvEntity {
     }
 }
 
+const TEAM_PROP: SendPropIdentifier=SendPropIdentifier::new("DT_BaseEntity","m_iTeamNum");
+
 impl MessageMutator for AddStvEntity {
     fn mutate_message(&self, message: &mut Message) {
         if !self.added.get() {
@@ -121,11 +120,14 @@ impl MessageMutator for AddStvEntity {
                 }
                 let server_class = player_entity.server_class;
 
+                let mut team_prop = player_entity.get_prop_by_identifier(&TEAM_PROP).unwrap().clone();
+                team_prop.value = SendPropValue::Integer(1);
+
                 ent_message.entities.push(PacketEntity {
                     server_class,
                     entity_index: self.entity_index,
                     baseline_props: vec![],
-                    props: vec![],
+                    props: vec![team_prop],
                     in_pvs: false,
                     update_type: UpdateType::Enter,
                     serial_number: 1234567,

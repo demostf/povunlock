@@ -1,5 +1,4 @@
 use std::mem::take;
-use tf_demo_parser::demo::message::packetentities::PacketEntity;
 use tf_demo_parser::demo::message::Message;
 use tf_demo_parser::demo::packet::Packet;
 
